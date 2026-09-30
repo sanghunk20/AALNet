@@ -1,9 +1,9 @@
 # Asymmetry-Aware-Landmark Network: AALNet
 
-AALNet detects 33 landmarks on posteroanterior (PA) cephalograms and is trained
-with an additional *asymmetry loss*, so that the facial-asymmetry measurements
-derived from the predicted landmarks (midline direction, lower-face, midface and
-dental deviation, occlusal canting) are supervised directly.
+AALNet detects 33 landmarks on posteroanterior (PA) cephalograms. It is trained
+with a DSNT loss on the landmark coordinates and an *asymmetry loss* that directly
+supervises the facial-asymmetry measurements derived from the predicted landmarks
+(midline direction, lower-face, midface and dental deviation, occlusal canting).
 
 This repository contains the model, training and evaluation code of the paper
 *"Asymmetry-aware landmark Network: clinical-asymmetry-aware deep learning for
