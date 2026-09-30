@@ -10,9 +10,9 @@ This repository builds on the following third-party projects, which are
 under permissive licenses; attribution is retained here.
 
   - timm (PyTorch Image Models), Apache-2.0
-      landmark_detect/models/backbones/hrnet.py wraps the timm HRNet model
+      aalnet/models/backbones/hrnet.py wraps the timm HRNet model
       and its ImageNet weights.
   - HRNet (HRNet-Image-Classification), MIT — model architecture/weights.
   - ConvNeXt V2 (https://github.com/facebookresearch/ConvNeXt-V2), MIT for
-      code — landmark_detect/modules/convnextv2_blocks.py reimplements its
+      code — aalnet/modules/convnextv2_blocks.py reimplements its
       building blocks, which are used in the decoder.

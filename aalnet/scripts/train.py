@@ -8,14 +8,14 @@
 
 Usage (run from the repository root):
     # one GPU: effective batch 64 = batch_size 8 x accum_iter 8
-    python -m landmark_detect.scripts.train \
-        --config landmark_detect/configs/lambda02.yaml \
+    python -m aalnet.scripts.train \
+        --config aalnet/configs/lambda02.yaml \
         --data_root /path/to/landmark_detect_800 \
         --fold 0 --output_dir outputs/lambda02/fold0
 
     # two GPUs: effective batch 64 = 2 x batch_size 8 x accum_iter 4
-    torchrun --nproc_per_node=2 -m landmark_detect.scripts.train \
-        --config landmark_detect/configs/lambda02.yaml \
+    torchrun --nproc_per_node=2 -m aalnet.scripts.train \
+        --config aalnet/configs/lambda02.yaml \
         --data_root /path/to/landmark_detect_800 \
         --fold 0 --accum_iter 4 --output_dir outputs/lambda02/fold0
 """

@@ -22,20 +22,20 @@ Expected layout of --output_root (as written by scripts/train.py):
 
 Usage (run from the repository root):
     # Evaluate on the fixed test set (default)
-    python -m landmark_detect.scripts.eval_checkpoint \
+    python -m aalnet.scripts.eval_checkpoint \
         --output_root outputs \
         --data_root /path/to/landmark_detect_800 \
         --pixel_spacing_file /path/to/pixel_spacing_per_image.json
 
     # Evaluate on the validation set of each fold
-    python -m landmark_detect.scripts.eval_checkpoint \
+    python -m aalnet.scripts.eval_checkpoint \
         --output_root outputs \
         --data_root /path/to/landmark_detect_800 \
         --pixel_spacing_file /path/to/pixel_spacing_per_image.json \
         --split val
 
     # Specific models and folds
-    python -m landmark_detect.scripts.eval_checkpoint \
+    python -m aalnet.scripts.eval_checkpoint \
         --output_root outputs \
         --data_root /path/to/landmark_detect_800 \
         --pixel_spacing_file /path/to/pixel_spacing_per_image.json \

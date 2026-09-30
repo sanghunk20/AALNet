@@ -36,7 +36,7 @@ Soft-argmax (spatial softmax, expected position)              modules/heatmap_ut
 mapped back to the original image → mm → 9 asymmetry measurements
 ```
 
-The three parts are assembled in `landmark_detect/models/aalnet.py`.
+The three parts are assembled in `aalnet/models/aalnet.py`.
 
 | Component | Details | Parameters |
 |---|---|---|
@@ -88,7 +88,7 @@ alone.
 
 ```
 .
-├── landmark_detect/
+├── aalnet/
 │   ├── configs/        # the five configurations reported in the paper
 │   ├── datasets/       # dataset class and training augmentation
 │   ├── losses/         # base loss (dsnt_loss.py), asymmetry loss (domain_loss.py)
@@ -188,9 +188,9 @@ landmark_detect_800/
 | 10 | **Left maxillary 6 crown** | 21 | Zygomatico-maxillary suture right | 32 | Lower dental midline |
 
 The 12 landmarks in bold enter the asymmetry loss and the asymmetry measurements.
-The indices are fixed in `landmark_detect/utils/clinical_metrics.py`, and the
+The indices are fixed in `aalnet/utils/clinical_metrics.py`, and the
 left/right pairs swapped under horizontal flipping in
-`landmark_detect/datasets/landmark_dataset.py`.
+`aalnet/datasets/landmark_dataset.py`.
 
 </details>
 
@@ -203,14 +203,14 @@ change `--accum_iter` on the command line for another number of GPUs, keeping
 
 ```bash
 # two GPUs (config default): 2 × 8 × 4 = 64
-torchrun --nproc_per_node=2 -m landmark_detect.scripts.train \
-    --config landmark_detect/configs/lambda02.yaml \
+torchrun --nproc_per_node=2 -m aalnet.scripts.train \
+    --config aalnet/configs/lambda02.yaml \
     --data_root /path/to/landmark_detect_800 \
     --fold 0 --output_dir outputs/lambda02/fold0
 
 # one GPU: 1 × 8 × 8 = 64
-python -m landmark_detect.scripts.train \
-    --config landmark_detect/configs/lambda02.yaml \
+python -m aalnet.scripts.train \
+    --config aalnet/configs/lambda02.yaml \
     --data_root /path/to/landmark_detect_800 \
     --fold 0 --accum_iter 8 --output_dir outputs/lambda02/fold0
 ```
@@ -245,7 +245,7 @@ use.
 ## Evaluation
 
 ```bash
-python -m landmark_detect.scripts.eval_checkpoint \
+python -m aalnet.scripts.eval_checkpoint \
     --output_root outputs \
     --data_root /path/to/landmark_detect_800 \
     --pixel_spacing_file /path/to/pixel_spacing_per_image.json \
@@ -261,7 +261,7 @@ For every `<config>/fold<N>` the script writes per-image CSV files, and under
 - the nine **asymmetry measurement errors**: angle (°) and horizontal
   displacement (mm) of the MSR and of the Cg–ANS line, lower-face deviation,
   midface asymmetry, the two dental deviations and occlusal canting (mm), computed
-  in `landmark_detect/utils/clinical_metrics.py`.
+  in `aalnet/utils/clinical_metrics.py`.
 
 Overlays of predicted and ground-truth landmarks on the original radiographs are
 saved as well. The original images are looked up in
