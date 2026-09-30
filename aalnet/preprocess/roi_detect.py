@@ -8,7 +8,7 @@ Source structure:
     src_root/images/raw/*.jpg
 
 Usage:
-    python -m aalnet.preprocess.roi_detect_landmark \
+    python -m aalnet.preprocess.roi_detect \
         --src_root /path/to/dataset \
         --output_dir /path/to/roi_otsu
 """

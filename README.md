@@ -144,7 +144,7 @@ spacing is known per image size.) Then run:
 
 ```bash
 # 1. Skull ROI bounding boxes by Otsu thresholding
-python -m aalnet.preprocess.roi_detect_landmark \
+python -m aalnet.preprocess.roi_detect \
     --src_root /path/to/dataset --output_dir /path/to/roi_otsu
 
 # 2. Crop + letterbox to 800×800; landmark coordinates are transformed accordingly
