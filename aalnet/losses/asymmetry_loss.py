@@ -130,10 +130,10 @@ def _signed_distance(
 
 
 
-# ── DomainLoss ─────────────────────────────────────────────────────
+# ── AsymmetryLoss ─────────────────────────────────────────────────────
 
 
-class DomainLoss(nn.Module):
+class AsymmetryLoss(nn.Module):
     """Asymmetry loss between predicted and GT landmark coordinates.
 
         L_asym = alpha_midline_std * (1 - cos theta_MSR)

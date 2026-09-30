@@ -1,5 +1,5 @@
 # AALNet without asymmetry loss (lambda_asym = 0): the same network trained with the
-# base loss alone. Identical to lambda02.yaml without the domain_loss block.
+# base loss alone. Identical to lambda02.yaml without the asymmetry_loss block.
 
 # Model
 pretrained: imagenet         # ImageNet-initialised HRNet-W48 backbone

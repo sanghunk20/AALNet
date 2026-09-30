@@ -1,5 +1,5 @@
 # Asymmetry-loss weight ablation: lambda_asym = 1.0.
-# Identical to lambda02.yaml except domain_loss.lambda_max.
+# Identical to lambda02.yaml except asymmetry_loss.lambda_max.
 
 # Model
 pretrained: imagenet         # ImageNet-initialised HRNet-W48 backbone
@@ -25,7 +25,7 @@ seed: 42
 
 # Asymmetry loss: L = L_base + lambda_max * L_asym (applied from the second epoch on;
 # the first epoch runs with the base loss at learning rate 0 under the per-epoch warm-up)
-domain_loss:
+asymmetry_loss:
   lambda_max: 1.0
   alpha_midline_std: 0.6     # MSR (perpendicular bisector of the latero-orbitale pair) direction
   alpha_midline_old: 0.4     # crista galli-ANS line direction

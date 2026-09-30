@@ -44,8 +44,8 @@ def train_one_epoch(
     max_norm: float = 0.0,
     accum_iter: int = 1,
     print_freq: int = 20,
-    domain_criterion=None,
-    domain_lambda_max: float = 0.0,
+    asym_criterion=None,
+    asym_lambda_max: float = 0.0,
 ):
     """Train one epoch.
 
@@ -60,8 +60,8 @@ def train_one_epoch(
         max_norm: Max gradient norm for clipping (0 = no clipping).
         accum_iter: Gradient accumulation steps.
         print_freq: Print frequency.
-        domain_criterion: Asymmetry loss (DomainLoss) or None.
-        domain_lambda_max: Weight of the asymmetry loss.
+        asym_criterion: Asymmetry loss (AsymmetryLoss) or None.
+        asym_lambda_max: Weight of the asymmetry loss.
 
     Returns:
         Dict of average metrics for this epoch.
@@ -70,15 +70,15 @@ def train_one_epoch(
     optimizer.zero_grad()
 
     total_loss = 0.0
-    total_domain_loss = 0.0
+    total_asymmetry_loss = 0.0
     total_fused_loss = 0.0
-    total_domain_details = defaultdict(float)
+    total_asym_details = defaultdict(float)
     num_batches = 0
 
     # Asymmetry-loss weight for this epoch (constant within the epoch)
-    domain_lam = 0.0
-    if domain_criterion is not None:
-        domain_lam = asymmetry_weight(epoch, domain_lambda_max)
+    asym_lam = 0.0
+    if asym_criterion is not None:
+        asym_lam = asymmetry_weight(epoch, asym_lambda_max)
 
     for batch_idx, (images, coords, _) in enumerate(data_loader):
         images = images.to(device, non_blocking=True)
@@ -92,25 +92,25 @@ def train_one_epoch(
             loss_value = loss.item()
 
             # Asymmetry loss on the predicted coordinates (with gradient flow)
-            domain_loss_value = 0.0
-            if domain_criterion is not None and domain_lam > 0:
+            asym_loss_value = 0.0
+            if asym_criterion is not None and asym_lam > 0:
                 pred_coords = heatmap_to_coords_soft_argmax(heatmaps)
                 heatmap_size = heatmaps.shape[-1]
 
-                domain_loss_raw, domain_details = domain_criterion(
+                asym_loss_raw, asym_details = asym_criterion(
                     _normalized_coords(pred_coords, heatmap_size),
                     _normalized_coords(gt_coords, heatmap_size),
                     return_details=True,
                 )
-                domain_loss_value = domain_loss_raw.item()
-                for k, v in domain_details.items():
-                    total_domain_details[k] += v
+                asym_loss_value = asym_loss_raw.item()
+                for k, v in asym_details.items():
+                    total_asym_details[k] += v
 
-                if not math.isfinite(domain_loss_value):
-                    print(f"Asymmetry loss is {domain_loss_value}, stopping training")
+                if not math.isfinite(asym_loss_value):
+                    print(f"Asymmetry loss is {asym_loss_value}, stopping training")
                     sys.exit(1)
 
-                loss = loss + domain_lam * domain_loss_raw
+                loss = loss + asym_lam * asym_loss_raw
 
         if not math.isfinite(loss_value):
             print(f"Loss is {loss_value}, stopping training")
@@ -134,7 +134,7 @@ def train_one_epoch(
         if torch.cuda.is_available():
             torch.cuda.synchronize()
         total_loss += loss_value
-        total_domain_loss += domain_loss_value
+        total_asymmetry_loss += asym_loss_value
         total_fused_loss += total_loss_value
         num_batches += 1
 
@@ -142,19 +142,19 @@ def train_one_epoch(
             lr = optimizer.param_groups[0]['lr']
             msg = (f'Epoch [{epoch}][{batch_idx}/{len(data_loader)}] '
                    f'loss: {loss_value:.4f} lr: {lr:.6f}')
-            if domain_lam > 0:
-                msg += (f' domain: {domain_loss_value:.4f} λ: {domain_lam:.3f}'
+            if asym_lam > 0:
+                msg += (f' asym: {asym_loss_value:.4f} λ: {asym_lam:.3f}'
                         f' total: {total_loss_value:.4f}')
             print(msg)
 
     avg_loss = total_loss / max(num_batches, 1)
     result = {'train_loss': avg_loss}
-    if domain_criterion is not None:
-        result['train_domain_loss'] = total_domain_loss / max(num_batches, 1)
+    if asym_criterion is not None:
+        result['train_asym_loss'] = total_asymmetry_loss / max(num_batches, 1)
         result['train_total_loss'] = total_fused_loss / max(num_batches, 1)
-        result['domain_lambda'] = domain_lam
-        for k, v in total_domain_details.items():
-            result[f'domain_{k}'] = v / max(num_batches, 1)
+        result['asym_lambda'] = asym_lam
+        for k, v in total_asym_details.items():
+            result[f'asym_{k}'] = v / max(num_batches, 1)
     print(f'Epoch [{epoch}] avg_loss: {avg_loss:.4f}')
     return result
 
@@ -165,8 +165,8 @@ def evaluate(
     data_loader,
     criterion,
     device,
-    domain_criterion=None,
-    domain_lambda: float = 0.0,
+    asym_criterion=None,
+    asym_lambda: float = 0.0,
 ):
     """Evaluate the model on a validation set (errors in pixels of the input image).
 
@@ -175,8 +175,8 @@ def evaluate(
         data_loader: Validation data loader yielding (images, coords, filenames).
         criterion: Base loss (DSNTLoss).
         device: CUDA device.
-        domain_criterion: Asymmetry loss or None (monitoring only).
-        domain_lambda: Asymmetry-loss weight of the current epoch.
+        asym_criterion: Asymmetry loss or None (monitoring only).
+        asym_lambda: Asymmetry-loss weight of the current epoch.
 
     Returns:
         Dict of evaluation metrics.
@@ -184,7 +184,7 @@ def evaluate(
     model.eval()
 
     total_loss = 0.0
-    total_domain_loss = 0.0
+    total_asymmetry_loss = 0.0
     total_fused_loss = 0.0
     num_batches = 0
     all_pred_coords = []
@@ -201,20 +201,20 @@ def evaluate(
         base_loss_value = loss.item()
 
         # Asymmetry loss, for monitoring only
-        domain_loss_value = 0.0
-        if domain_criterion is not None and domain_lambda > 0:
+        asym_loss_value = 0.0
+        if asym_criterion is not None and asym_lambda > 0:
             pred_coords = heatmap_to_coords_soft_argmax(heatmaps)
             heatmap_size = heatmaps.shape[-1]
-            domain_loss_value = domain_criterion(
+            asym_loss_value = asym_criterion(
                 _normalized_coords(pred_coords, heatmap_size),
                 _normalized_coords(gt_coords, heatmap_size),
             ).item()
-            fused_loss_value = base_loss_value + domain_lambda * domain_loss_value
+            fused_loss_value = base_loss_value + asym_lambda * asym_loss_value
         else:
             fused_loss_value = base_loss_value
 
         total_loss += base_loss_value
-        total_domain_loss += domain_loss_value
+        total_asymmetry_loss += asym_loss_value
         total_fused_loss += fused_loss_value
         num_batches += 1
 
@@ -233,16 +233,16 @@ def evaluate(
     metrics['mre_unit'] = 'px'
 
     metrics['val_loss'] = avg_loss
-    if domain_criterion is not None:
-        avg_domain = total_domain_loss / max(num_batches, 1)
+    if asym_criterion is not None:
+        avg_asym = total_asymmetry_loss / max(num_batches, 1)
         avg_fused = total_fused_loss / max(num_batches, 1)
-        metrics['val_domain_loss'] = avg_domain
+        metrics['val_asym_loss'] = avg_asym
         metrics['val_total_loss'] = avg_fused
 
     msg = (f'Eval: loss={avg_loss:.4f}, MRE={metrics["mre_mean"]:.2f}px '
            f'(±{metrics["mre_std"]:.2f})')
-    if domain_criterion is not None and domain_lambda > 0:
-        msg += f', domain={avg_domain:.4f}, total={avg_fused:.4f}'
+    if asym_criterion is not None and asym_lambda > 0:
+        msg += f', asym={avg_asym:.4f}, total={avg_fused:.4f}'
     print(msg)
 
     return metrics

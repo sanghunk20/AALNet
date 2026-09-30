@@ -52,7 +52,7 @@ error plus the Jensen–Shannon divergence between the probability map and a
 Gaussian (σ = 5 px) centred on the ground truth
 (`losses/dsnt_loss.py`).
 
-**Asymmetry loss** (`losses/domain_loss.py`; in the code the MSR is called
+**Asymmetry loss** (`losses/asymmetry_loss.py`; in the code the MSR is called
 `midline_std` and the Cg–ANS line `midline_old`). Twelve of the 33 landmarks define
 two reference midlines and five deviation measurements:
 
@@ -91,7 +91,7 @@ alone.
 ├── aalnet/
 │   ├── configs/        # the five configurations reported in the paper
 │   ├── datasets/       # dataset class and training augmentation
-│   ├── losses/         # base loss (dsnt_loss.py), asymmetry loss (domain_loss.py)
+│   ├── losses/         # base loss (dsnt_loss.py), asymmetry loss (asymmetry_loss.py)
 │   ├── models/         # AALNet (aalnet.py): backbone, decoder (necks/), head
 │   ├── modules/        # decoder building blocks, heatmap utilities
 │   ├── scripts/        # train.py, eval_checkpoint.py

@@ -37,7 +37,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
 
 from ..datasets.landmark_dataset import LandmarkDataset
-from ..losses.domain_loss import DomainLoss
+from ..losses.asymmetry_loss import AsymmetryLoss
 from ..losses.dsnt_loss import DSNTLoss
 from ..models.aalnet import AALNet
 from ..trainers.landmark_engine import evaluate, train_one_epoch
@@ -120,7 +120,7 @@ def _explicit_cli_keys(argv=None) -> set:
     return set(vars(namespace))
 
 
-DOMAIN_LOSS_KEYS = (
+ASYMMETRY_LOSS_KEYS = (
     'lambda_max',
     'alpha_midline_std', 'alpha_midline_old',
     'alpha_midface', 'alpha_lowerface', 'alpha_dental', 'alpha_canting',
@@ -131,14 +131,14 @@ def merge_config_and_args(config: dict | None, args, argv=None):
     """Fill args from the config; arguments given on the command line take priority.
 
     Config values are converted and checked like command-line values (type and
-    choices); unknown keys are rejected. The nested ``domain_loss`` block
-    (asymmetry loss) is stored as ``args.domain_loss``.
+    choices); unknown keys are rejected. The nested ``asymmetry_loss`` block
+    (asymmetry loss) is stored as ``args.asymmetry_loss``.
     """
     config = config or {}
     actions = {a.dest: a for a in get_args_parser()._actions}
     explicit = _explicit_cli_keys(argv)
     for key, value in config.items():
-        if key == 'domain_loss':
+        if key == 'asymmetry_loss':
             continue
         if key not in actions:
             raise ValueError(f"Unknown key in config file: '{key}'")
@@ -153,14 +153,14 @@ def merge_config_and_args(config: dict | None, args, argv=None):
         if key not in explicit:
             setattr(args, key, value)
 
-    domain_cfg = config.get('domain_loss', None)
-    if domain_cfg is not None:
-        unknown = sorted(set(domain_cfg) - set(DOMAIN_LOSS_KEYS))
+    asym_cfg = config.get('asymmetry_loss', None)
+    if asym_cfg is not None:
+        unknown = sorted(set(asym_cfg) - set(ASYMMETRY_LOSS_KEYS))
         if unknown:
-            raise ValueError(f"Unknown key(s) in the domain_loss block: {unknown}")
-        if 'lambda_max' not in domain_cfg:
-            raise ValueError("The domain_loss block requires 'lambda_max'")
-    args.domain_loss = domain_cfg
+            raise ValueError(f"Unknown key(s) in the asymmetry_loss block: {unknown}")
+        if 'lambda_max' not in asym_cfg:
+            raise ValueError("The asymmetry_loss block requires 'lambda_max'")
+    args.asymmetry_loss = asym_cfg
     return args
 
 
@@ -248,21 +248,21 @@ def main(args):
     # Base loss
     criterion = DSNTLoss(temperature=1.0, lambda_js=1.0, sigma=args.sigma)
 
-    # Asymmetry loss (optional, configured by the `domain_loss` block of the YAML)
-    domain_criterion = None
-    domain_lambda_max = 0.0
-    domain_cfg = getattr(args, 'domain_loss', None)
-    if domain_cfg and domain_cfg.get('lambda_max', 0.0) > 0:
-        domain_lambda_max = float(domain_cfg['lambda_max'])
-        domain_criterion = DomainLoss(
-            alpha_midline_std=domain_cfg.get('alpha_midline_std', 0.6),
-            alpha_midline_old=domain_cfg.get('alpha_midline_old', 0.4),
-            alpha_midface=domain_cfg.get('alpha_midface', 1.0),
-            alpha_lowerface=domain_cfg.get('alpha_lowerface', 1.0),
-            alpha_dental=domain_cfg.get('alpha_dental', 1.0),
-            alpha_canting=domain_cfg.get('alpha_canting', 1.0),
+    # Asymmetry loss (optional, configured by the `asymmetry_loss` block of the YAML)
+    asym_criterion = None
+    asym_lambda_max = 0.0
+    asym_cfg = getattr(args, 'asymmetry_loss', None)
+    if asym_cfg and asym_cfg.get('lambda_max', 0.0) > 0:
+        asym_lambda_max = float(asym_cfg['lambda_max'])
+        asym_criterion = AsymmetryLoss(
+            alpha_midline_std=asym_cfg.get('alpha_midline_std', 0.6),
+            alpha_midline_old=asym_cfg.get('alpha_midline_old', 0.4),
+            alpha_midface=asym_cfg.get('alpha_midface', 1.0),
+            alpha_lowerface=asym_cfg.get('alpha_lowerface', 1.0),
+            alpha_dental=asym_cfg.get('alpha_dental', 1.0),
+            alpha_canting=asym_cfg.get('alpha_canting', 1.0),
         ).to(device)
-        print(f"Asymmetry loss enabled: lambda={domain_lambda_max}")
+        print(f"Asymmetry loss enabled: lambda={asym_lambda_max}")
 
     # AMP gradient scaler
     loss_scaler = torch.cuda.amp.GradScaler()
@@ -307,8 +307,8 @@ def main(args):
             max_norm=args.max_norm,
             accum_iter=args.accum_iter,
             print_freq=args.print_freq,
-            domain_criterion=domain_criterion,
-            domain_lambda_max=domain_lambda_max,
+            asym_criterion=asym_criterion,
+            asym_lambda_max=asym_lambda_max,
         )
 
         # Validation, checkpointing and logging: main process only, on the whole fold
@@ -318,8 +318,8 @@ def main(args):
                 data_loader=val_loader,
                 criterion=criterion,
                 device=device,
-                domain_criterion=domain_criterion,
-                domain_lambda=train_metrics.get('domain_lambda', 0.0),
+                asym_criterion=asym_criterion,
+                asym_lambda=train_metrics.get('asym_lambda', 0.0),
             )
 
             current_mre = val_metrics['mre_mean']
@@ -384,7 +384,7 @@ if __name__ == '__main__':
     if args.config:
         args = merge_config_and_args(load_config(args.config), args)
     else:
-        args.domain_loss = None
+        args.asymmetry_loss = None
     if args.data_root is None:
         parser.error('--data_root is required')
 
