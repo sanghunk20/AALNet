@@ -11,12 +11,12 @@ The paper trains five models (folds 0-4) and reports their mean on the
 fixed test set.
 
 Usage:
-    python preprocess/create_fold_splits.py \
-        --data_dir /path/to/landmark_detect_800
+    python -m aalnet.preprocess.create_fold_splits \
+        --data_dir /path/to/dataset_800
 
     # Custom settings
-    python preprocess/create_fold_splits.py \
-        --data_dir /path/to/landmark_detect_800 \
+    python -m aalnet.preprocess.create_fold_splits \
+        --data_dir /path/to/dataset_800 \
         --num_folds 9 --test_ratio 0.1 --seed 42
 """
 

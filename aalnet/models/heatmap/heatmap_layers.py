@@ -3,10 +3,10 @@
 import torch
 import torch.nn as nn
 
-from ...modules.heatmap_utils import heatmap_to_coords_soft_argmax
+from ...utils.heatmap_utils import heatmap_to_coords_soft_argmax
 
 
-class HeatmapHead(nn.Module):
+class HeatmapLayers(nn.Module):
     """Convolutional head that produces one heatmap per landmark.
 
     Args:

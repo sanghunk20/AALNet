@@ -13,8 +13,8 @@ Output format (JSON):
     {"P0001_pod1y": 0.135, "P0001_preop": 0.135, ...}
 
 Usage:
-    python preprocess/build_pixel_spacing_map.py \
-        --raw_img_dir /path/to/landmark_detect/images/raw \
+    python -m aalnet.preprocess.build_pixel_spacing_map \
+        --raw_img_dir /path/to/dataset/images/raw \
         --resolution_json /path/to/resolution_pixel_spacing.json \
         --output /path/to/pixel_spacing_per_image.json
 """

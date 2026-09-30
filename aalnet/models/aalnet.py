@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 
 from .backbones.hrnet import HRNetBackbone
-from .decoder.mlp_fpn import MLPFPNNeck
-from .heatmap.heatmap_head import HeatmapHead
+from .decoder.fpn_decoder import FPNDecoder
+from .heatmap.heatmap_layers import HeatmapLayers
 
 
 class AALNet(nn.Module):
@@ -25,13 +25,13 @@ class AALNet(nn.Module):
     ):
         super().__init__()
         self.backbone = HRNetBackbone(model_name='hrnet_w48', pretrained=pretrained)
-        self.neck = MLPFPNNeck(
+        self.neck = FPNDecoder(
             in_channels=self.backbone.out_channels,
             out_channels=256,
             decoder_drop_path=decoder_drop_path,
             residual_drop_path=0.2,
         )
-        self.head = HeatmapHead(
+        self.head = HeatmapLayers(
             in_channels=self.neck.out_channels,
             num_landmarks=num_landmarks,
         )

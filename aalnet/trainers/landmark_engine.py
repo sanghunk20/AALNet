@@ -15,7 +15,7 @@ import torch.nn as nn
 import torch.cuda.amp as amp
 
 from ..utils.metrics import compute_mre
-from ..modules.heatmap_utils import heatmap_to_coords_soft_argmax
+from ..utils.heatmap_utils import heatmap_to_coords_soft_argmax
 
 
 def asymmetry_weight(epoch: int, lambda_max: float) -> float:

@@ -1,1 +1,1 @@
-from .mlp_fpn import MLPFPNNeck
+from .fpn_decoder import FPNDecoder

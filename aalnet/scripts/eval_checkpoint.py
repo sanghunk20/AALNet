@@ -24,20 +24,20 @@ Usage (run from the repository root):
     # Evaluate on the fixed test set (default)
     python -m aalnet.scripts.eval_checkpoint \
         --output_root outputs \
-        --data_root /path/to/landmark_detect_800 \
+        --data_root /path/to/dataset_800 \
         --pixel_spacing_file /path/to/pixel_spacing_per_image.json
 
     # Evaluate on the validation set of each fold
     python -m aalnet.scripts.eval_checkpoint \
         --output_root outputs \
-        --data_root /path/to/landmark_detect_800 \
+        --data_root /path/to/dataset_800 \
         --pixel_spacing_file /path/to/pixel_spacing_per_image.json \
         --split val
 
     # Specific models and folds
     python -m aalnet.scripts.eval_checkpoint \
         --output_root outputs \
-        --data_root /path/to/landmark_detect_800 \
+        --data_root /path/to/dataset_800 \
         --pixel_spacing_file /path/to/pixel_spacing_per_image.json \
         --only lambda02 withoutAsyLoss --folds 0 1 2 3 4
 """
@@ -175,7 +175,7 @@ def save_per_sample_clinical_csv(
 ):
     """Save per-sample asymmetry measurements and their errors as CSV.
 
-    Columns: midline comparison (midline_std = MSR, midline_old = Cg-ANS line)
+    Columns: midline comparison (msr = MSR, cg_ans = Cg-ANS line)
     and the ground-truth value, predicted value and error of each deviation
     measurement.
     """
@@ -183,8 +183,8 @@ def save_per_sample_clinical_csv(
 
     columns = [
         'filename',
-        'midline_std_angle_diff_deg', 'midline_std_x_disp_mm', 'midline_std_cos_sim',
-        'midline_old_angle_diff_deg', 'midline_old_x_disp_mm', 'midline_old_cos_sim',
+        'msr_angle_diff_deg', 'msr_x_disp_mm', 'msr_cos_sim',
+        'cg_ans_angle_diff_deg', 'cg_ans_x_disp_mm', 'cg_ans_cos_sim',
         'gt_lowerface_dev', 'pred_lowerface_dev', 'err_lowerface_dev',
         'gt_lowerface_dir', 'pred_lowerface_dir',
         'gt_midface_dist_R', 'gt_midface_dist_L', 'gt_midface_asymmetry',
@@ -496,10 +496,10 @@ def aggregate_folds(
 
     # ── 4. Clinical metrics aggregated across folds ──────────────
     clinical_metric_keys = [
-        ('midline_std_angle', 'midline_std_angle_diff_deg'),
-        ('midline_std_x_disp', 'midline_std_x_disp_mm'),
-        ('midline_old_angle', 'midline_old_angle_diff_deg'),
-        ('midline_old_x_disp', 'midline_old_x_disp_mm'),
+        ('msr_angle', 'msr_angle_diff_deg'),
+        ('msr_x_disp', 'msr_x_disp_mm'),
+        ('cg_ans_angle', 'cg_ans_angle_diff_deg'),
+        ('cg_ans_x_disp', 'cg_ans_x_disp_mm'),
         ('lowerface_dev', 'err_lowerface_dev'),
         ('midface_asymmetry', 'err_midface_asymmetry'),
         ('dental_upper_midline', 'err_dental_upper_midline'),
@@ -570,8 +570,8 @@ def main():
     parser.add_argument('--no_vis', action='store_true',
                         help='Disable visualization image generation')
     parser.add_argument('--original_images_dir', type=str, default=None,
-                        help='Directory with original-resolution images '
-                             '(default: {data_root}/../landmark_detect/images/raw)')
+                        help='Directory with the original-resolution images; '
+                             'when given, landmark overlays are saved')
     parser.add_argument('--eval_root', type=str, default=None,
                         help='If provided, write all eval outputs here instead of '
                              'next to checkpoints. --output_root is still used '
@@ -584,10 +584,6 @@ def main():
 
     # Resolve original images directory for visualization
     original_images_dir = args.original_images_dir
-    if original_images_dir is None and not args.no_vis:
-        default_dir = str(Path(args.data_root).resolve().parent / 'landmark_detect' / 'images' / 'raw')
-        if Path(default_dir).is_dir():
-            original_images_dir = default_dir
 
     # Load pixel spacing
     pixel_spacing_map = load_pixel_spacing(args.pixel_spacing_file)

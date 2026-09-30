@@ -27,8 +27,8 @@ seed: 42
 # the first epoch runs with the base loss at learning rate 0 under the per-epoch warm-up)
 asymmetry_loss:
   lambda_max: 0.05
-  alpha_midline_std: 0.6     # MSR (perpendicular bisector of the latero-orbitale pair) direction
-  alpha_midline_old: 0.4     # crista galli-ANS line direction
+  alpha_msr: 0.6             # MSR (perpendicular bisector of the latero-orbitale pair) direction
+  alpha_cg_ans: 0.4          # crista galli-ANS line direction
   alpha_midface: 1.0         # midface asymmetry
   alpha_lowerface: 1.0       # lower-face deviation
   alpha_dental: 1.0          # upper dental midline + incisor crown midpoint deviation

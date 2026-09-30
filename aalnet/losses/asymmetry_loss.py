@@ -4,8 +4,8 @@ Supervises, on the predicted coordinates, the direction of the two reference
 midlines and the five deviation measurements used in facial-asymmetry assessment.
 
 Naming used in the code:
-    midline_std  = MSR, the perpendicular bisector of the latero-orbitale pair
-    midline_old  = the crista galli-ANS (Cg-ANS) line
+    msr          = MSR, the perpendicular bisector of the latero-orbitale pair
+    cg_ans       = the crista galli-ANS (Cg-ANS) line
     lowerface    = lower-face deviation (menton to MSR)
     midface      = midface asymmetry (right vs. left zygoma to MSR)
     dental       = upper dental midline, and maxillary central-incisor crown midpoint, to MSR
@@ -34,7 +34,7 @@ from ..utils.clinical_metrics import (
 # ── Geometry helpers (differentiable) ──────────────────────────────
 
 
-def _compute_midline_std(coords: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+def _compute_msr(coords: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute standard midline: perpendicular bisector of latero-orbital R/L.
 
     Origin: midpoint of Lo R and Lo L.
@@ -60,7 +60,7 @@ def _compute_midline_std(coords: torch.Tensor) -> tuple[torch.Tensor, torch.Tens
     return midpoint, direction
 
 
-def _compute_midline_old(coords: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+def _compute_cg_ans(coords: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute old midline: crista galli → ANS direction.
 
     Anchor point: midpoint of crista galli and ANS.
@@ -136,8 +136,8 @@ def _signed_distance(
 class AsymmetryLoss(nn.Module):
     """Asymmetry loss between predicted and GT landmark coordinates.
 
-        L_asym = alpha_midline_std * (1 - cos theta_MSR)
-               + alpha_midline_old * (1 - cos theta_Cg-ANS)
+        L_asym = alpha_msr * (1 - cos theta_MSR)
+               + alpha_cg_ans * (1 - cos theta_Cg-ANS)
                + sum_k alpha_k * |d_k(pred) - d_k(gt)|
 
     where theta is the angle between the predicted and GT midline directions and
@@ -147,8 +147,8 @@ class AsymmetryLoss(nn.Module):
     loss. The loss is returned unweighted; the trainer multiplies it by lambda.
 
     Args:
-        alpha_midline_std: Weight of the MSR direction term.
-        alpha_midline_old: Weight of the Cg-ANS direction term.
+        alpha_msr: Weight of the MSR direction term.
+        alpha_cg_ans: Weight of the Cg-ANS direction term.
         alpha_midface: Weight of the midface asymmetry term.
         alpha_lowerface: Weight of the lower-face deviation term.
         alpha_dental: Weight of the dental deviation terms (2 terms).
@@ -157,16 +157,16 @@ class AsymmetryLoss(nn.Module):
 
     def __init__(
         self,
-        alpha_midline_std: float = 0.6,
-        alpha_midline_old: float = 0.4,
+        alpha_msr: float = 0.6,
+        alpha_cg_ans: float = 0.4,
         alpha_midface: float = 1.0,
         alpha_lowerface: float = 1.0,
         alpha_dental: float = 1.0,
         alpha_canting: float = 1.0,
     ):
         super().__init__()
-        self.alpha_midline_std = alpha_midline_std
-        self.alpha_midline_old = alpha_midline_old
+        self.alpha_msr = alpha_msr
+        self.alpha_cg_ans = alpha_cg_ans
         self.alpha_midface = alpha_midface
         self.alpha_lowerface = alpha_lowerface
         self.alpha_dental = alpha_dental
@@ -208,10 +208,10 @@ class AsymmetryLoss(nn.Module):
         Args:
             pred_coords: [B, 33, 2] predicted coords.
             gt_coords: [B, 33, 2] GT coords.
-            gt_point_std: [B, 2] GT midline_std point (precomputed).
-            gt_dir_std: [B, 2] GT midline_std direction (precomputed).
-            pred_point_std: [B, 2] pred midline_std point (precomputed).
-            pred_dir_std: [B, 2] pred midline_std direction (precomputed).
+            gt_point_std: [B, 2] GT msr point (precomputed).
+            gt_dir_std: [B, 2] GT msr direction (precomputed).
+            pred_point_std: [B, 2] pred msr point (precomputed).
+            pred_dir_std: [B, 2] pred msr direction (precomputed).
 
         Returns:
             Dict of scalar losses: midface, lowerface, dental, canting.
@@ -289,14 +289,14 @@ class AsymmetryLoss(nn.Module):
             If return_details: (total_loss, details_dict).
         """
         # Compute midlines once (reused for both midline loss and deviation loss)
-        gt_point_std, gt_dir_std = _compute_midline_std(gt_coords)
-        pred_point_std, pred_dir_std = _compute_midline_std(pred_coords)
-        _, gt_dir_old = _compute_midline_old(gt_coords)
-        _, pred_dir_old = _compute_midline_old(pred_coords)
+        gt_point_std, gt_dir_std = _compute_msr(gt_coords)
+        pred_point_std, pred_dir_std = _compute_msr(pred_coords)
+        _, gt_dir_old = _compute_cg_ans(gt_coords)
+        _, pred_dir_old = _compute_cg_ans(pred_coords)
 
         # Midline losses
-        loss_midline_std = self._midline_loss(gt_dir_std, pred_dir_std)
-        loss_midline_old = self._midline_loss(gt_dir_old, pred_dir_old)
+        loss_msr = self._midline_loss(gt_dir_std, pred_dir_std)
+        loss_cg_ans = self._midline_loss(gt_dir_old, pred_dir_old)
 
         # Deviation losses (pass precomputed midlines)
         dev_losses = self._deviation_losses(
@@ -307,8 +307,8 @@ class AsymmetryLoss(nn.Module):
 
         # Weighted sum
         total = (
-            self.alpha_midline_std * loss_midline_std
-            + self.alpha_midline_old * loss_midline_old
+            self.alpha_msr * loss_msr
+            + self.alpha_cg_ans * loss_cg_ans
             + self.alpha_midface * dev_losses['midface']
             + self.alpha_lowerface * dev_losses['lowerface']
             + self.alpha_dental * dev_losses['dental']
@@ -317,8 +317,8 @@ class AsymmetryLoss(nn.Module):
 
         if return_details:
             details = {
-                'midline_std': loss_midline_std.item(),
-                'midline_old': loss_midline_old.item(),
+                'msr': loss_msr.item(),
+                'cg_ans': loss_cg_ans.item(),
                 'midface': dev_losses['midface'].item(),
                 'lowerface': dev_losses['lowerface'].item(),
                 'dental': dev_losses['dental'].item(),

@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ...modules.convnextv2_blocks import ConvNeXtV2Block, LayerNorm2d
+from .blocks import ConvNeXtV2Block, LayerNorm2d
 
 
 class ResidualConvBlock(nn.Module):
@@ -36,7 +36,7 @@ class ResidualConvBlock(nn.Module):
         return self.act(out + residual)
 
 
-class MLPFPNNeck(nn.Module):
+class FPNDecoder(nn.Module):
     """Top-down FPN decoder with ConvNeXt V2 blocks (Wyatt 2024).
 
     Supersamples the feature pyramid to full input resolution following

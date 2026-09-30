@@ -1,1 +1,1 @@
-from .heatmap_head import HeatmapHead
+from .heatmap_layers import HeatmapLayers

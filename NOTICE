@@ -14,5 +14,5 @@ under permissive licenses; attribution is retained here.
       and its ImageNet weights.
   - HRNet (HRNet-Image-Classification), MIT — model architecture/weights.
   - ConvNeXt V2 (https://github.com/facebookresearch/ConvNeXt-V2), MIT for
-      code — aalnet/modules/convnextv2_blocks.py reimplements its
+      code — aalnet/models/decoder/blocks.py reimplements its
       building blocks, which are used in the decoder.

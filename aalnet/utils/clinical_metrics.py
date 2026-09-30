@@ -9,8 +9,8 @@ All distance outputs are in pixel units. Multiply by pixel_spacing for mm.
 Direction convention: patient Right (+), patient Left (-).
 In PA ceph image coordinates: image left = patient right.
 
-Naming: midline_std = MSR (perpendicular bisector of the latero-orbitale pair),
-midline_old = crista galli-ANS (Cg-ANS) line.
+Naming: msr = MSR (perpendicular bisector of the latero-orbitale pair),
+cg_ans = crista galli-ANS (Cg-ANS) line.
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ def _ensure_batch(coords: np.ndarray) -> np.ndarray:
 
 # ── Midline computation ─────────────────────────────────────────────
 
-def compute_midline_std(
+def compute_msr(
     coords: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Compute standard midline: perpendicular bisector of latero-orbital R/L.
@@ -76,7 +76,7 @@ def compute_midline_std(
     return midpoint, direction
 
 
-def compute_midline_old(
+def compute_cg_ans(
     coords: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Compute old midline: crista galli → ANS line.
@@ -263,7 +263,7 @@ def compute_lowerface_deviation(
     midline_point: np.ndarray,
     midline_dir: np.ndarray,
 ) -> dict:
-    """Compute lowerface deviation: menton distance from midline_std.
+    """Compute lowerface deviation: menton distance from msr.
 
     Args:
         coords: [N, L, 2] landmark coordinates.
@@ -290,7 +290,7 @@ def compute_midface_deviation(
     midline_point: np.ndarray,
     midline_dir: np.ndarray,
 ) -> dict:
-    """Compute midface deviation: zygoma R/L asymmetry from midline_std.
+    """Compute midface deviation: zygoma R/L asymmetry from msr.
 
     Asymmetry = signed_dist(R) + signed_dist(L).
     Sign convention: R → +, L → −, so sum ≈ 0 when symmetric.
@@ -333,8 +333,8 @@ def compute_dental_deviation(
     """Compute dental deviation from midline.
 
     Measures:
-    1. Upper midline point distance from midline_std.
-    2. Maxillary 1 crown R/L midpoint distance from midline_std.
+    1. Upper midline point distance from msr.
+    2. Maxillary 1 crown R/L midpoint distance from msr.
 
     Args:
         coords: [N, L, 2] landmark coordinates.
@@ -434,11 +434,11 @@ def compute_clinical_errors(
     scale = _get_scale(pixel_spacing, N)
 
     # ── Midline comparison ───────────────────────────────────────
-    gt_std_pt, gt_std_dir = compute_midline_std(gt)
-    pred_std_pt, pred_std_dir = compute_midline_std(pred)
+    gt_std_pt, gt_std_dir = compute_msr(gt)
+    pred_std_pt, pred_std_dir = compute_msr(pred)
 
-    gt_old_pt, gt_old_dir = compute_midline_old(gt)
-    pred_old_pt, pred_old_dir = compute_midline_old(pred)
+    gt_old_pt, gt_old_dir = compute_cg_ans(gt)
+    pred_old_pt, pred_old_dir = compute_cg_ans(pred)
 
     # Angle differences
     std_angle_diff = compute_midline_angle_diff(gt_std_dir, pred_std_dir)
@@ -477,12 +477,12 @@ def compute_clinical_errors(
 
     return {
         # Midline angle differences (degrees)
-        'midline_std_angle_diff_deg': std_angle_diff,
-        'midline_std_x_disp_mm': std_x_disp,
-        'midline_std_cos_sim': std_cos_sim,
-        'midline_old_angle_diff_deg': old_angle_diff,
-        'midline_old_x_disp_mm': old_x_disp,
-        'midline_old_cos_sim': old_cos_sim,
+        'msr_angle_diff_deg': std_angle_diff,
+        'msr_x_disp_mm': std_x_disp,
+        'msr_cos_sim': std_cos_sim,
+        'cg_ans_angle_diff_deg': old_angle_diff,
+        'cg_ans_x_disp_mm': old_x_disp,
+        'cg_ans_cos_sim': old_cos_sim,
         # Lowerface deviation
         'gt_lowerface_dev': gt_lf['distance'] * scale,
         'pred_lowerface_dev': pred_lf['distance'] * scale,

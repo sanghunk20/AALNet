@@ -10,13 +10,13 @@ Usage (run from the repository root):
     # one GPU: effective batch 64 = batch_size 8 x accum_iter 8
     python -m aalnet.scripts.train \
         --config aalnet/configs/lambda02.yaml \
-        --data_root /path/to/landmark_detect_800 \
+        --data_root /path/to/dataset_800 \
         --fold 0 --output_dir outputs/lambda02/fold0
 
     # two GPUs: effective batch 64 = 2 x batch_size 8 x accum_iter 4
     torchrun --nproc_per_node=2 -m aalnet.scripts.train \
         --config aalnet/configs/lambda02.yaml \
-        --data_root /path/to/landmark_detect_800 \
+        --data_root /path/to/dataset_800 \
         --fold 0 --accum_iter 4 --output_dir outputs/lambda02/fold0
 """
 
@@ -122,7 +122,7 @@ def _explicit_cli_keys(argv=None) -> set:
 
 ASYMMETRY_LOSS_KEYS = (
     'lambda_max',
-    'alpha_midline_std', 'alpha_midline_old',
+    'alpha_msr', 'alpha_cg_ans',
     'alpha_midface', 'alpha_lowerface', 'alpha_dental', 'alpha_canting',
 )
 
@@ -255,8 +255,8 @@ def main(args):
     if asym_cfg and asym_cfg.get('lambda_max', 0.0) > 0:
         asym_lambda_max = float(asym_cfg['lambda_max'])
         asym_criterion = AsymmetryLoss(
-            alpha_midline_std=asym_cfg.get('alpha_midline_std', 0.6),
-            alpha_midline_old=asym_cfg.get('alpha_midline_old', 0.4),
+            alpha_msr=asym_cfg.get('alpha_msr', 0.6),
+            alpha_cg_ans=asym_cfg.get('alpha_cg_ans', 0.4),
             alpha_midface=asym_cfg.get('alpha_midface', 1.0),
             alpha_lowerface=asym_cfg.get('alpha_lowerface', 1.0),
             alpha_dental=asym_cfg.get('alpha_dental', 1.0),

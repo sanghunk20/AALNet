@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..modules.heatmap_utils import heatmap_to_coords_soft_argmax, generate_gaussian_heatmap_at_scale
+from ..utils.heatmap_utils import heatmap_to_coords_soft_argmax, generate_gaussian_heatmap_at_scale
 
 
 class DSNTLoss(nn.Module):

@@ -17,20 +17,20 @@ automatic landmark detection on posteroanterior cephalograms"* (under review).
 
 ```
 PA cephalogram
-   │  skull ROI crop (Otsu) + letterbox to 800×800            preprocess/
+   │  skull ROI crop (Otsu) + letterbox to 800×800            aalnet/preprocess/
    ▼
 HRNet-W48 backbone (ImageNet-initialised, timm)               models/backbones/hrnet.py
    │  4 feature maps: stride 4 / 8 / 16 / 32
    │                  128 / 256 / 512 / 1024 channels
    ▼
-FPN-style fusion decoder                                      models/decoder/mlp_fpn.py
+FPN-style fusion decoder                                      models/decoder/fpn_decoder.py
    │  top-down fusion  stride 32 → 4   (256 channels)
    │  learned upsampling stride 4 → 2 → 1  (128 → 64 channels)
    ▼
-Heatmap layers: 3×3 conv → BN → ReLU → 1×1 conv               models/heatmap/heatmap_head.py
+Heatmap layers: 3×3 conv → BN → ReLU → 1×1 conv               models/heatmap/heatmap_layers.py
    │  33 heatmaps at 800×800
    ▼
-Soft-argmax (spatial softmax, expected position)              modules/heatmap_utils.py
+Soft-argmax (spatial softmax, expected position)              utils/heatmap_utils.py
    │  33 (x, y) coordinates
    ▼
 mapped back to the original image → mm → 9 asymmetry measurements
@@ -52,8 +52,7 @@ error plus the Jensen–Shannon divergence between the probability map and a
 Gaussian (σ = 5 px) centred on the ground truth
 (`losses/dsnt_loss.py`).
 
-**Asymmetry loss** (`losses/asymmetry_loss.py`; in the code the MSR is called
-`midline_std` and the Cg–ANS line `midline_old`). Twelve of the 33 landmarks define
+**Asymmetry loss** (`losses/asymmetry_loss.py`). Twelve of the 33 landmarks define
 two reference midlines and five deviation measurements:
 
 - MSR: the perpendicular bisector of the right and left latero-orbitale;
@@ -93,11 +92,10 @@ alone.
 │   ├── datasets/       # dataset class and training augmentation
 │   ├── losses/         # base loss (dsnt_loss.py), asymmetry loss (asymmetry_loss.py)
 │   ├── models/         # AALNet (aalnet.py): backbone/, decoder/, heatmap/
-│   ├── modules/        # decoder building blocks, heatmap utilities
+│   ├── preprocess/     # ROI detection, crop + letterbox, fold splits, pixel spacing
 │   ├── scripts/        # train.py, eval_checkpoint.py
 │   ├── trainers/       # training and validation loops
-│   └── utils/          # MRE/SDR, asymmetry measurements, coordinate mapping, pixel spacing
-├── preprocess/         # ROI detection, crop + letterbox, fold splits, pixel spacing
+│   └── utils/          # MRE/SDR, asymmetry measurements, heatmap utilities, coordinate mapping
 └── pyproject.toml
 ```
 
@@ -115,7 +113,7 @@ into the layout below. Everything else (cropping, splitting, mapping predictions
 back to the original image) is done by the scripts.
 
 ```
-landmark_detect/                     # any name; passed as --src_root
+dataset/                             # any name; passed as --src_root
 ├── images/raw/<name>.jpg            # original radiograph, 8-bit (read as grayscale)
 └── coords/<name>.csv                # landmark coordinates of the same image
 ```
@@ -141,28 +139,28 @@ JSON file mapping `<name>` to mm/pixel:
 {"P0001_preop": 0.135, "P0001_pod1y": 0.135, "P0002_init": 0.150}
 ```
 
-(`preprocess/build_pixel_spacing_map.py` can build this file when the pixel
+(`aalnet/preprocess/build_pixel_spacing_map.py` can build this file when the pixel
 spacing is known per image size.) Then run:
 
 ```bash
 # 1. Skull ROI bounding boxes by Otsu thresholding
-python preprocess/roi_detect_landmark.py \
-    --src_root /path/to/landmark_detect --output_dir /path/to/roi_otsu
+python -m aalnet.preprocess.roi_detect_landmark \
+    --src_root /path/to/dataset --output_dir /path/to/roi_otsu
 
 # 2. Crop + letterbox to 800×800; landmark coordinates are transformed accordingly
-python preprocess/crop_and_letterbox_landmark.py \
+python -m aalnet.preprocess.crop_and_letterbox_landmark \
     --bbox_csv /path/to/roi_otsu/bboxes.csv \
-    --src_root /path/to/landmark_detect \
-    --dst_root /path/to/landmark_detect_800 --target_size 800
+    --src_root /path/to/dataset \
+    --dst_root /path/to/dataset_800 --target_size 800
 
 # 3. Patient-level split: fixed test set (10%) + nine folds on the rest
-python preprocess/create_fold_splits.py --data_dir /path/to/landmark_detect_800
+python -m aalnet.preprocess.create_fold_splits --data_dir /path/to/dataset_800
 ```
 
 This produces the directory passed as `--data_root` to training and evaluation:
 
 ```
-landmark_detect_800/
+dataset_800/
 ├── images/<name>.jpg              # 800×800 network input
 ├── coords/<name>.csv              # landmark coordinates in the 800×800 image
 ├── transform_params/<name>.json   # crop box, scale and padding, used to map predictions back
@@ -205,13 +203,13 @@ change `--accum_iter` on the command line for another number of GPUs, keeping
 # two GPUs (config default): 2 × 8 × 4 = 64
 torchrun --nproc_per_node=2 -m aalnet.scripts.train \
     --config aalnet/configs/lambda02.yaml \
-    --data_root /path/to/landmark_detect_800 \
+    --data_root /path/to/dataset_800 \
     --fold 0 --output_dir outputs/lambda02/fold0
 
 # one GPU: 1 × 8 × 8 = 64
 python -m aalnet.scripts.train \
     --config aalnet/configs/lambda02.yaml \
-    --data_root /path/to/landmark_detect_800 \
+    --data_root /path/to/dataset_800 \
     --fold 0 --accum_iter 8 --output_dir outputs/lambda02/fold0
 ```
 
@@ -247,7 +245,7 @@ use.
 ```bash
 python -m aalnet.scripts.eval_checkpoint \
     --output_root outputs \
-    --data_root /path/to/landmark_detect_800 \
+    --data_root /path/to/dataset_800 \
     --pixel_spacing_file /path/to/pixel_spacing_per_image.json \
     --split test            # or: --split val
 ```
@@ -264,9 +262,7 @@ For every `<config>/fold<N>` the script writes per-image CSV files, and under
   in `aalnet/utils/clinical_metrics.py`.
 
 Overlays of predicted and ground-truth landmarks on the original radiographs are
-saved as well. The original images are looked up in
-`<data_root>/../landmark_detect/images/raw`, or in `--original_images_dir`;
-`--no_vis` disables the overlays.
+saved when `--original_images_dir /path/to/dataset/images/raw` is given.
 
 ## License
 
