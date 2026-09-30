@@ -23,11 +23,11 @@ HRNet-W48 backbone (ImageNet-initialised, timm)               models/backbones/h
    │  4 feature maps: stride 4 / 8 / 16 / 32
    │                  128 / 256 / 512 / 1024 channels
    ▼
-FPN-style fusion decoder                                      models/necks/mlp_fpn.py
+FPN-style fusion decoder                                      models/decoder/mlp_fpn.py
    │  top-down fusion  stride 32 → 4   (256 channels)
    │  learned upsampling stride 4 → 2 → 1  (128 → 64 channels)
    ▼
-Heatmap head: 3×3 conv → BN → ReLU → 1×1 conv                 models/heads/heatmap_head.py
+Heatmap layers: 3×3 conv → BN → ReLU → 1×1 conv               models/heatmap/heatmap_head.py
    │  33 heatmaps at 800×800
    ▼
 Soft-argmax (spatial softmax, expected position)              modules/heatmap_utils.py
@@ -42,7 +42,7 @@ The three parts are assembled in `aalnet/models/aalnet.py`.
 |---|---|---|
 | Backbone | HRNet-W48, multi-resolution features at strides 4–32 | 67.1 M |
 | Decoder | 1×1 lateral projection + LayerNorm at each level; a residual conv block and 3 ConvNeXt V2 blocks at stride 32, then 2 ConvNeXt V2 blocks at strides 16 and 8, with bilinear ×2 upsampling and addition between levels; two learned upsampling stages to full resolution (3×3 conv, with 2 ConvNeXt V2 blocks at stride 2) | 6.1 M |
-| Head | one full-resolution heatmap per landmark | 0.04 M |
+| Heatmap layers | one full-resolution heatmap per landmark | 0.04 M |
 | Total | | 73.3 M |
 
 **Base loss.** Each heatmap is turned into a probability map by a spatial softmax
@@ -92,7 +92,7 @@ alone.
 │   ├── configs/        # the five configurations reported in the paper
 │   ├── datasets/       # dataset class and training augmentation
 │   ├── losses/         # base loss (dsnt_loss.py), asymmetry loss (asymmetry_loss.py)
-│   ├── models/         # AALNet (aalnet.py): backbone, decoder (necks/), head
+│   ├── models/         # AALNet (aalnet.py): backbone/, decoder/, heatmap/
 │   ├── modules/        # decoder building blocks, heatmap utilities
 │   ├── scripts/        # train.py, eval_checkpoint.py
 │   ├── trainers/       # training and validation loops

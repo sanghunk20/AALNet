@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 
 from .backbones.hrnet import HRNetBackbone
-from .necks.mlp_fpn import MLPFPNNeck
-from .heads.heatmap_head import HeatmapHead
+from .decoder.mlp_fpn import MLPFPNNeck
+from .heatmap.heatmap_head import HeatmapHead
 
 
 class AALNet(nn.Module):
