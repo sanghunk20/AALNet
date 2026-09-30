@@ -15,7 +15,7 @@ Output structure (flat):
 fold_splits.json is NOT generated here — run create_fold_splits.py separately.
 
 Usage:
-    python -m aalnet.preprocess.crop_and_letterbox_landmark \
+    python -m aalnet.preprocess.crop_and_letterbox \
         --bbox_csv /path/to/bboxes.csv \
         --src_root /path/to/dataset \
         --dst_root /path/to/dataset_800 \

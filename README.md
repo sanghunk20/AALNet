@@ -148,7 +148,7 @@ python -m aalnet.preprocess.roi_detect \
     --src_root /path/to/dataset --output_dir /path/to/roi_otsu
 
 # 2. Crop + letterbox to 800×800; landmark coordinates are transformed accordingly
-python -m aalnet.preprocess.crop_and_letterbox_landmark \
+python -m aalnet.preprocess.crop_and_letterbox \
     --bbox_csv /path/to/roi_otsu/bboxes.csv \
     --src_root /path/to/dataset \
     --dst_root /path/to/dataset_800 --target_size 800

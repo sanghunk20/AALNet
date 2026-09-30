@@ -2,7 +2,7 @@
 
 For every radiograph, a foreground mask is computed by Otsu thresholding and the
 skull is selected among its connected components; the bounding box (with a
-margin) is written to bboxes.csv, which crop_and_letterbox_landmark.py consumes.
+margin) is written to bboxes.csv, which crop_and_letterbox.py consumes.
 
 Source structure:
     src_root/images/raw/*.jpg
