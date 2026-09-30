@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aalnet"
+version = "0.1.0"
+description = "AALNet: Asymmetry-Aware Landmark Network for posteroanterior cephalograms"
+requires-python = ">=3.10"
+license = {text = "CC-BY-NC-4.0"}
+dependencies = [
+    "torch>=2.0",
+    "timm>=1.0",
+    "numpy",
+    "opencv-python",
+    "pyyaml",
+    "pillow",
+    "tqdm",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["landmark_detect*"]

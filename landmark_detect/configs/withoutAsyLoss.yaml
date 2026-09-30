@@ -1,0 +1,24 @@
+# AALNet without asymmetry loss (lambda_asym = 0): the same network trained with the
+# base loss alone. Identical to lambda02.yaml without the domain_loss block.
+
+# Model
+pretrained: imagenet         # ImageNet-initialised HRNet-W48 backbone
+mlp_fpn_drop_path: 0.275     # stochastic depth in the decoder blocks
+
+# Base loss (DSNT on coordinates normalised to [-1, 1] + JS regulariser)
+sigma: 5.0                   # sigma (px) of the target Gaussian of the JS regulariser
+
+# Optimisation
+epochs: 400                  # upper bound; early stopping on validation MRE
+patience: 60
+lr: 1.0e-4
+min_lr: 1.0e-6
+warmup_epochs: 5
+weight_decay: 0.05
+max_norm: 1.0                # gradient-norm clipping
+# Effective batch 64 = GPUs x batch_size x accum_iter. Set for 2-GPU DDP;
+# on one GPU pass --accum_iter 8 (keep batch_size 8 per GPU).
+batch_size: 8                # per GPU
+accum_iter: 4
+num_workers: 8
+seed: 42

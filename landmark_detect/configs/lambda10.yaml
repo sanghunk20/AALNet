@@ -1,0 +1,35 @@
+# Asymmetry-loss weight ablation: lambda_asym = 1.0.
+# Identical to lambda02.yaml except domain_loss.lambda_max.
+
+# Model
+pretrained: imagenet         # ImageNet-initialised HRNet-W48 backbone
+mlp_fpn_drop_path: 0.275     # stochastic depth in the decoder blocks
+
+# Base loss (DSNT on coordinates normalised to [-1, 1] + JS regulariser)
+sigma: 5.0                   # sigma (px) of the target Gaussian of the JS regulariser
+
+# Optimisation
+epochs: 400                  # upper bound; early stopping on validation MRE
+patience: 60
+lr: 1.0e-4
+min_lr: 1.0e-6
+warmup_epochs: 5
+weight_decay: 0.05
+max_norm: 1.0                # gradient-norm clipping
+# Effective batch 64 = GPUs x batch_size x accum_iter. Set for 2-GPU DDP;
+# on one GPU pass --accum_iter 8 (keep batch_size 8 per GPU).
+batch_size: 8                # per GPU
+accum_iter: 4
+num_workers: 8
+seed: 42
+
+# Asymmetry loss: L = L_base + lambda_max * L_asym (applied from the second epoch on;
+# the first epoch runs with the base loss at learning rate 0 under the per-epoch warm-up)
+domain_loss:
+  lambda_max: 1.0
+  alpha_midline_std: 0.6     # MSR (perpendicular bisector of the latero-orbitale pair) direction
+  alpha_midline_old: 0.4     # crista galli-ANS line direction
+  alpha_midface: 1.0         # midface asymmetry
+  alpha_lowerface: 1.0       # lower-face deviation
+  alpha_dental: 1.0          # upper dental midline + incisor crown midpoint deviation
+  alpha_canting: 1.0         # occlusal canting
