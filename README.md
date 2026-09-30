@@ -91,7 +91,7 @@ alone.
 │   ├── configs/        # the five configurations reported in the paper
 │   ├── datasets/       # dataset class and training augmentation
 │   ├── losses/         # base loss (dsnt_loss.py), asymmetry loss (asymmetry_loss.py)
-│   ├── models/         # AALNet (aalnet.py): backbone/, decoder/, heatmap/
+│   ├── models/         # AALNet (aalnet.py): backbones/, decoder/, heatmap/
 │   ├── preprocess/     # ROI detection, crop + letterbox, fold splits, pixel spacing
 │   ├── scripts/        # train.py, eval_checkpoint.py
 │   ├── trainers/       # training and validation loops
