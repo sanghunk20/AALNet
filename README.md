@@ -9,9 +9,12 @@ This repository contains the model, training and evaluation code of the paper
 *"Asymmetry-aware landmark Network: clinical-asymmetry-aware deep learning for
 automatic landmark detection on posteroanterior cephalograms"* (under review).
 
-> **Code-only release.** The radiographs cannot be shared, and trained weights
-> are not included. To use the code you need your own PA cephalograms annotated
-> with the 33 landmarks listed [below](#landmarks).
+> **Weights on Hugging Face, data not shared.** The trained AALNet weights (five
+> fold models) are available at
+> [huggingface.co/omskim/AALNet](https://huggingface.co/omskim/AALNet); see
+> [Pretrained weights](#pretrained-weights). The radiographs cannot be shared. To
+> train or evaluate you need your own PA cephalograms annotated with the 33
+> landmarks listed [below](#landmarks).
 
 ## Model architecture
 
@@ -240,6 +243,39 @@ fold), `best_mre_per_landmark.csv`, `config.json` and `log.jsonl` to the output
 directory. The ImageNet weights of the backbone are downloaded by timm on first
 use.
 
+<a name="pretrained-weights"></a>
+## Pretrained weights
+
+The five AALNet models of the paper (`lambda02.yaml`, folds 0–4) are hosted at
+[huggingface.co/omskim/AALNet](https://huggingface.co/omskim/AALNet), in the
+same layout that training writes and that the evaluation script expects:
+
+```
+lambda02/
+├── fold0/
+│   ├── checkpoint_best.pth   # model weights (state dict under the key "model")
+│   └── config.json           # training configuration of this fold
+├── fold1/
+├── ...
+└── fold4/
+```
+
+Access is gated: accept the terms on the model page and log in with
+`hf auth login` before downloading. Then download them into an output root:
+
+```bash
+pip install huggingface_hub
+hf auth login
+hf download omskim/AALNet --local-dir weights
+```
+
+and pass that directory to the evaluation script as `--output_root weights`.
+The models were trained on 800×800 inputs produced by the
+[data preparation](#data-preparation) steps above, so new radiographs must go
+through the same skull ROI crop and letterboxing. They were trained on
+radiographs from a single institution; accuracy on images from other devices or
+populations has not been established.
+
 ## Evaluation
 
 ```bash
@@ -249,6 +285,11 @@ python -m aalnet.scripts.eval_checkpoint \
     --pixel_spacing_file /path/to/pixel_spacing_per_image.json \
     --split test            # or: --split val
 ```
+
+`--output_root` is either your own training output root or the directory with
+the [pretrained weights](#pretrained-weights). The script evaluates the images
+listed under `test_files` (or the fold's `val_files`) in `fold_splits.json` and
+needs their annotations, since it reports errors against them.
 
 Predictions are mapped back to the original image and converted to millimetres.
 For every `<config>/fold<N>` the script writes per-image CSV files, and under
@@ -266,7 +307,7 @@ saved when `--original_images_dir /path/to/dataset/images/raw` is given.
 
 ## License
 
-This code is released under the
+This code and the pretrained weights are released under the
 [Creative Commons Attribution-NonCommercial 4.0 International License](https://creativecommons.org/licenses/by-nc/4.0/)
 (CC BY-NC 4.0; see [LICENSE](LICENSE)): it may be used, shared and adapted for
 non-commercial purposes with attribution. Commercial use is not permitted.
